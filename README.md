@@ -109,13 +109,33 @@ docker ps -a
 ---
 
 ### 6. Configuración de Procesos en NiFi
-- Crear procesos con los siguientes valores:
-  ```json
-  {"event":"test","value":123}
-  ```
-- Modificar el tiempo según sea necesario.
-- Configurar `consumerKafka_2_0` con valores por defecto.
-- Conectar flujos y establecer `relationships` a `terminate` para evitar advertencias.
+1. **Crear los siguientes procesadores:**
+   - **GenerateFlowFile:** Configurar con los siguientes valores:
+     - `Custom Text`: `{ "event": "test", "value": 123 }`
+     - `Run Schedule`: `5 sec`
+   
+   - **PublishKafka_2_0:**
+     - `bootstrap.servers`: `<IP:PORT>` (Ejemplo: `127.0.0.1:9092`)
+     - `Topic Name`: `metrics_topic`
+
+   - **ConsumeKafka_2_0:**
+     - `bootstrap.servers`: `<IP:PORT>`
+     - `Topic Name`: `metrics_topic`
+     - `Group ID`: `nifi-group`
+
+   - **LogAttribute:** Dejar configuración por defecto.
+
+2. **Conectar los flujos:**
+   - Conectar `GenerateFlowFile` con `PublishKafka_2_0`.
+   - Conectar `PublishKafka_2_0` con `ConsumeKafka_2_0`.
+   - Conectar `ConsumeKafka_2_0` con `LogAttribute`.
+
+3. **Configurar relaciones:**
+   - En todos los procesadores, establecer `success` y `failure` hacia los siguientes procesadores correspondientes.
+   - Verificar que todos los procesos estén en estado `Running`.
+
+4. **Iniciar los procesadores:**
+   - Seleccionar todos los procesadores y hacer clic en `Start`.
 
 ---
 
@@ -132,6 +152,7 @@ docker ps -a
    - `nifi_amount_flowfiles_transferred`: Total de FlowFiles transferidos.
    - `nifi_amount_bytes_sent`: Bytes enviados.
    - `nifi_amount_threads_active`: Hilos activos.
+4. Asegurar la correcta visualización de métricas y realizar ajustes en los paneles según las necesidades.
 
 ---
 
@@ -142,6 +163,11 @@ docker exec -it kafka kafka-console-consumer --bootstrap-server <AWS_PUBLIC_IP>:
 ```
 
 Reemplace `<AWS_PUBLIC_IP>` con la dirección IP pública generada.
+
+### 10. Tareas Adicionales de Validación
+1. Desde el entorno gráfico de NiFi, valide la correcta transferencia de `FlowFiles`.
+2. Verifique las conexiones en `Kafka` y asegúrese de que los mensajes se envíen correctamente al tópico correspondiente.
+3. Monitoree los gráficos en Grafana para confirmar la sincronización en tiempo real entre las métricas de Prometheus y los datos de NiFi.
 
 ---
 
